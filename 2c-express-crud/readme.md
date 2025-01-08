@@ -50,7 +50,7 @@ app.use((request, response, next) => {
 These 2 blocks of code are the middleware on this application file. When a request is made to `localhost:3000/`, the middleware is preparing a console log of metadata from the request, and preparing a random number between 1 and 10. It's attached to the request object so that we have access to it from function to function. Then, it's sent back in JSON when we arrive at this next block of code:
 
 ```js
-app.get("/", (request, response) => {
+app.get("/pokemons", (request, response) => {
   response.json({
     chance: request.chance,
   });
@@ -122,15 +122,15 @@ let pokeData = [
 ];
 ```
 
-Next, we're going to set up a GET request handler for `localhost:3000/` where the client will receive the local data we just set up:
+Next, we're going to set up a GET request handler for `localhost:3000/pokemons` where the client will receive the local data we just set up:
 
-4. Handle get requests to localhost:3000/
+4. Handle get requests to localhost:3000/pokemons
 
 ```js
-app.get("/", (req, res) => {
+app.get("/pokemons", (req, res) => {
   // 4a. respond with the entire playerData object
   res.status(200).json({ message: "success", payload: pokeData });
-}); // end of Get "/"
+}); // end of Get "/pokemons"
 ```
 
 Don't forget the `.listen()` function at the bottom!
@@ -146,91 +146,76 @@ app.listen(PORT, () => {
 ```
 
 - Run the server by going to the terminal and using the command `node index.js`
-- Use Postman to perform a GET request to `localhost:3000/`
+- Use Postman to perform a GET request to `localhost:3000/pokemons`
 - Once it works, cut the server off by pressing `ctrl + c` in the terminal
 
 Let's go back into the `app.get()` function and set up the ability to get a specific item from our data set:
 
 ## Queries
 
-Queries are a way to ask for information by placing text after the URL extention. URL extensions can be used to reach different web pages, but the text beyond that can be captured in order to search a database for specific items. For example, if we want to target `pikachu` within our data, the URL should read `localhost:3000/?name=pikachu`. The `?name=pikachu` is the query, `req.query` is what holds the value `{name:"pikachu"}`.
+Queries are a way to ask for information by placing text after the URL extention. URL extensions can be used to reach different web pages, but the text beyond that can be captured in order to search a database for specific items. For example, if we want to target `pikachu` within our data, the URL should read `localhost:3000/pokemons?name=pikachu`. The `?name=pikachu` is the query, `req.query` is what holds the value `{name:"pikachu"}`.
 
 5. Handle query requests
 
 ```js
-// 5a. Collect the query from the request object
-let ObjectKeys = Object.keys(req.query);
+  // 5a. Set up for if the client requested a pokemon with a query
+  if (req.query.name) {
+    // 5b. Use .find to search for the pokemon in the data
+    const foundPokemon = pokeData.find((pokemon) => pokemon.name === req.query.name); // req.query.name is the ?name=pikachu in the URL
 
-// 5b. Set up for if a query exists
-if (ObjectKeys.length > 0) {
-  // 5c. Use findIndex() to return the index of the first element that passes a test (provided by a function)
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.query.name
-  );
+    // 5c. If the pokemon isn't found it will be undefined, send back a failure message
+    if (foundPokemon === undefined) {
+      res.status(404).json({
+        message: "failure",
+        payload: "pokemon not found",
+      });
+      // 5d. if the pokemon IS found, send back a success message, with the pokemon that was found
+    } else {
+      res
+        .status(200)
+        .json({ message: "success", payload: foundPokemon });
+    } // end of if/else statement when query exists
 
-  // 5d. If the pokemon's index isn't found, send back a failure message
-  if (foundPokemonIndex === -1) {
-    res.json({
-      message: "failure",
-      payload: "pokemon not found",
-    });
-
-    // 5e. if the pokemon IS found, send back a success message, with the pokemon that was found
+    // 4a. respond with the entire pokeData object if you DON'T input pokemon
   } else {
-    res.json({
-      message: "success",
-      payload: pokeData[foundPokemonIndex],
-    });
-  }
-  // 4a. respond with the entire pokeData object if you DON'T input pokemon
-} else {
-  res.json({
-    message: "success",
-    payload: pokeData,
-  });
-}
+    res.status(200).json({ message: "success", payload: pokeData });
+  } // end of if/else a query exists
+}); // end of Get "/pokemons"
 ```
 
 Note: If you are unsure where values are coming from / going, make sure to console.log things step by step!
 
 - Run the server by going to the terminal and using the command `node index.js`
-- Use Postman to perform a GET request to `localhost:3000/` and in the Params tab, make sure to use a name that matches the data. Also test a name that doesn't match the data, so you can see what a failure looks like.
+- Use Postman to perform a GET request to `localhost:3000/pokemons` and in the Params tab, make sure to use a name that matches the data. Also test a name that doesn't match the data, so you can see what a failure looks like.
 - Once it works, cut the server off by pressing `ctrl + c` in the terminal
 
 ---
 
 Next is the POST request. When testing this in Postman, look under the URL where it says "Params Auth Headers Body" and select `Body`. From the dropdown that says "none" by default, change it to `raw` and change the next dropdown that says "text" to `JSON`. The object written in there will be represented by `req.body`.
 
-6. Handle post requests to localhost:3000/
+6. Handle post requests to localhost:3000/pokemons
 
 ```js
-app.post("/", (req, res) => {
+app.post("/pokemons", (req, res) => {
   // 6a. Search to see if the pokemon already exists in the data
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.body.name
-  );
+  const foundPokemon = pokeData.find((pokemon) => pokemon.name === req.body.name);
 
   // 6b. Send back a failure if you try to put in a pokemon that exists already
-  if (foundPokemonIndex !== -1) {
-    res.json({
+  if (foundPokemon) {
+    res.status(500).json({
       message: "failure",
-      payload: "Pokemon already exists cannot add",
+      payload: "Pokemon already exists, cannot add",
     });
-
     // 6c. Save the pokemon if it doesn't exist yet
   } else {
     pokeData.push(req.body);
-
-    res.json({
-      message: "success",
-      payload: pokeData,
-    });
-  }
-});
+    res.status(200).json({ message: "success", payload: pokeData });
+  } // end of if/else statement
+}); // end of Post "/pokemons"
 ```
 
 - Run the server by going to the terminal and using the command `node index.js`
-- Use Postman to perform a POST request to `localhost:3000/` and in the Body tab (set text to raw JSON) use the following to test this request:
+- Use Postman to perform a POST request to `localhost:3000/pokemons` and in the Body tab (set text to raw JSON) use the following to test this request:
 
 ```js
 {
@@ -247,61 +232,64 @@ app.post("/", (req, res) => {
 
 ### Dynamic Parameters
 
-Next is the PUT request. Here we will use something called Dynamic Parameters to target the data we would like to edit/update. The `/:name` means that if the URL is `localhost:3000/pikachu`, the `req.params` will be `{name:pikachu}`. It's similar to the Query, but Queries are usually used for filtering large data (look at the URL when navigating products on a website such as Adidas.com) while Dynamic Parameters are used for targeting specific data points in a database.
+Next is the PATCH request. Here we will use something called Dynamic Parameters to target the data we would like to edit/update. The `/:name` means that if the URL is `localhost:3000/pokemons/pikachu`, the `req.params` will be `{ name: "pikachu" }`. It's similar to the Query, but Queries are usually used for filtering large data (look at the URL when navigating products on a website such as Adidas.com) while Dynamic Parameters are used for targeting specific data points in a database.
 
-7. Handle put requests to localhost:3000/:name
+7. Handle PATCH requests to localhost:3000/pokemons/:name
 
 ```js
-app.put("/:name", (req, res) => {
+app.patch("/pokemons/:name", (req, res) => {
+  // dynamic param, /:name is dynamic
+
   // 7a. Find the pokemon you want to change
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.params.name
-  );
+  const foundPokemon = pokeData.find((pokemon) => pokemon.name === req.params.name);
 
   // 7b. Send a failure message if pokemon isn't found
-  if (foundPokemonIndex === -1) {
-    res.json({
+  if (foundPokemon === undefined) {
+    res.status(500).json({
       message: "failure",
       payload: "pokemon not found",
     });
 
     // 7c. Target a pokemon, and change the object with a new object
   } else {
-    // Target the object we want to change & the object we're changing it to
-    let pokeObj = pokeData[foundPokemonIndex];
-    let incomingObj = req.body;
+    //let copy = Object.assign(a, b)
+    const incomingObj = req.body;
 
-    //merging two objects
-    Object.assign(pokeObj, incomingObj);
+    // for (const property in foundPokemon) {
+    //   if (incomingObj[property]) {
+    //     foundPokemon[property] = incomingObj[property];
+    //   }
+    // }
 
-    res.json({
-      message: "success",
-      payload: pokeData,
-    });
-  }
-});
+    // another way to do it:
+    Object.assign(foundPokemon, incomingObj);
+
+    res.status(200).json({ message: "success", payload: foundPokemon });
+  } // end of if/else statement
+}); // end of PATCH "/pokemons/:name"
 ```
 
 - Run the server by going to the terminal and using the command `node index.js`
-- Use Postman to perform a PUT request to `localhost:3000/:name` and in the Body tab (set text to raw JSON), make sure to fill it with the keys that match the keys of the original data, and fill the values with unique values. Also test a name that doesn't match the data, so you can see what a failure looks like.
+- Use Postman to perform a PATCH request to `localhost:3000/pokemons/:name` and in the Body tab (set text to raw JSON), make sure to fill it with the keys that match the keys of the original data, and fill the values with unique values. Also test a name that doesn't match the data, so you can see what a failure looks like.
 - Once it works, cut the server off by pressing `ctrl + c` in the terminal
 
 ---
 
 Next is the DELETE request. Again, we will be using Dynamic Parameters
 
-8. Handle delete requests to localhost:3000/name
+8. Handle delete requests to localhost:3000/pokemons/:name
 
 ```js
-app.delete("/:name", (req, res) => {
+app.delete("/pokemons/:name", (req, res) => {
   // 8a. Find the pokemon you want to delete
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.params.name
-  );
+  // We search for the index instead of the item directly
+  // so we can remove the pokemon from the array using splice later.
 
-  // 8b. Send a failure if the pokemon isn't found
+  let foundPokemonIndex = pokeData.findIndex((pokemon) => pokemon.name === req.params.name);
+
+  // 8b. Send a failure if the pokemon isn't found--findIndex returns -1 when there's no match
   if (foundPokemonIndex === -1) {
-    res.json({
+    res.status(500).json({
       message: "failure",
       payload: "pokemon not found",
     });
@@ -310,12 +298,9 @@ app.delete("/:name", (req, res) => {
   } else {
     pokeData.splice(foundPokemonIndex, 1);
 
-    res.json({
-      message: "success",
-      payload: pokeData,
-    });
-  }
-});
+    res.status(200).json({ message: "success", payload: pokeData });
+  } // end of if/else statement
+}); // end of DELETE "/pokemons/:name"
 ```
 
 - Run the server by going to the terminal and using the command `node index.js`
@@ -341,6 +326,6 @@ SUMMARY:
 | CRUD   | Request Verb | Input                                  |
 | ------ | ------------ | -------------------------------------- |
 | Create | POST         | Request Body                           |
-| Read   | GET          | URL + Query Parameters                 |
-| Update | PUT          | URL + Request Body + Dynamic Parameter |
+| Read   | GET          | URL + (optionally) Query Parameters    |
+| Update | PATCH        | URL + Request Body + Dynamic Parameter |
 | Delete | DELETE       | URL + Dynamic Parameter                |

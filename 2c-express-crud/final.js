@@ -10,7 +10,7 @@ const app = express();
 */
 // Helps to see incoming req.body object
 app.use(express.json());
-// Colorizes status codes
+// Gives you full logs of requests and responses. Great for debugging.
 app.use(logger("dev"));
 // Allows us to parse form data
 app.use(express.urlencoded({ extended: false }));
@@ -21,131 +21,116 @@ app.use(express.urlencoded({ extended: false }));
 let pokeData = [{ id: 1, name: "pikachu", type: "electric", number: 25 }];
 
 /*
-    4. Handle GET requests to localhost:3000/
+    4. Handle GET requests to localhost:3000/pokemons
 */
-app.get("/", (req, res) => {
+app.get("/pokemons", (req, res) => {
   /*
     5. Set up the ability to query for a specific item in the data set
   */
-  // 5a. Collect the query from the request object
-  let ObjectKeys = Object.keys(req.query);
 
-  // 5b. Set up for if a query exists
-  if (ObjectKeys.length > 0) {
-    // 5c. Use findIndex() to return the index of the first element that passes a test (provided by a function)
-    let foundPokemonIndex = pokeData.findIndex(
-      (item) => item.name === req.query.name
-    ); // req.query is the ?name=pikachu in the URL
+  // 5a. Set up for if the client requested a pokemon with a query
+  if (req.query.name) {
+    // 5b. Use .find to search for the pokemon in the data
+    const foundPokemon = pokeData.find((pokemon) => pokemon.name === req.query.name); // req.query.name is the ?name=pikachu in the URL
 
-    // 5d. If the pokemon's index isn't found, send back a failure message
-    if (foundPokemonIndex === -1) {
-      res.status(500).json({
+    // 5c. If the pokemon isn't found it will be undefined, send back a failure message
+    if (foundPokemon === undefined) {
+      res.status(404).json({
         message: "failure",
         payload: "pokemon not found",
       });
-      // 5e. if the pokemon IS found, send back a success message, with the pokemon that was found
+      // 5d. if the pokemon IS found, send back a success message, with the pokemon that was found
     } else {
       res
         .status(200)
-        .json({ message: "success", payload: pokeData[foundPokemonIndex] });
+        .json({ message: "success", payload: foundPokemon });
     } // end of if/else statement when query exists
 
     // 4a. respond with the entire pokeData object if you DON'T input pokemon
   } else {
     res.status(200).json({ message: "success", payload: pokeData });
   } // end of if/else a query exists
-}); // end of Get "/"
+}); // end of Get "/pokemons"
 
 /*
-    6. Handle POST requests to localhost:3000/
+    6. Handle POST requests to localhost:3000/pokemons
 */
-app.post("/", (req, res) => {
+app.post("/pokemons", (req, res) => {
   // 6a. Search to see if the pokemon already exists in the data
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.body.name
-  );
-
-  console.log(req.body);
+  const foundPokemon = pokeData.find((pokemon) => pokemon.name === req.body.name);
 
   // 6b. Send back a failure if you try to put in a pokemon that exists already
-  if (foundPokemonIndex !== -1) {
+  if (foundPokemon) {
     res.status(500).json({
       message: "failure",
-      payload: "Pokemon already exists cannot add",
+      payload: "Pokemon already exists, cannot add",
     });
     // 6c. Save the pokemon if it doesn't exist yet
   } else {
     pokeData.push(req.body);
-
     res.status(200).json({ message: "success", payload: pokeData });
   } // end of if/else statement
-}); // end of Post "/"
+}); // end of Post "/pokemons"
 
 /*
-    7. Handle PUT requests to localhost:3000/:name
+    7. Handle PATCH requests to localhost:3000/pokemons/:name
 */
-app.put("/:name", (req, res) => {
-  //params /:name its dynamic
+app.patch("/pokemons/:name", (req, res) => {
+  // dynamic param, /:name is dynamic
 
   // 7a. Find the pokemon you want to change
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.params.name
-  );
+  const foundPokemon = pokeData.find((pokemon) => pokemon.name === req.params.name);
 
   // 7b. Send a failure message if pokemon isn't found
-  if (foundPokemonIndex === -1) {
+  if (foundPokemon === undefined) {
     res.status(500).json({
       message: "failure",
       payload: "pokemon not found",
     });
+
     // 7c. Target a pokemon, and change the object with a new object
   } else {
     //let copy = Object.assign(a, b)
+    const incomingObj = req.body;
 
-    let pokeObj = pokeData[foundPokemonIndex];
-    let incomingObj = req.body;
 
-    // console.log(pokeObj)
-
-    //merging two objects
-    Object.assign(pokeObj, incomingObj);
-
-    // console.log(pokeObj);
-
-    // for (const property in pokeObj) {
-    //   for (const key in incomingObj) {
-    //     if (key === property) {
-    //       pokeObj[property] = incomingObj[key];
-    //     }
+    // for (const property in foundPokemon) {
+    //   if (incomingObj[property]) {
+    //     foundPokemon[property] = incomingObj[property];
     //   }
     // }
 
-    res.status(200).json({ message: "success", payload: pokeData });
+    // another way to do it:
+    Object.assign(foundPokemon, incomingObj);
+
+    res.status(200).json({ message: "success", payload: foundPokemon });
   } // end of if/else statement
-}); // end of PUT "/:name"
+}); // end of PATCH "/pokemons/:name"
 
 /*
-    8. Handle DELETE requests to localhost:3000/name
+    8. Handle DELETE requests to localhost:3000/pokemons/:name
 */
-app.delete("/:name", (req, res) => {
+app.delete("/pokemons/:name", (req, res) => {
   // 8a. Find the pokemon you want to delete
-  let foundPokemonIndex = pokeData.findIndex(
-    (item) => item.name === req.params.name
-  );
+  // We search for the index instead of the item directly
+  // so we can remove the pokemon from the array using splice later.
 
-  // 8b. Send a failure if the pokemon isn't found
+  let foundPokemonIndex = pokeData.findIndex((pokemon) => pokemon.name === req.params.name);
+
+  // 8b. Send a failure if the pokemon isn't found--findIndex returns -1 when there's no match
   if (foundPokemonIndex === -1) {
     res.status(500).json({
       message: "failure",
       payload: "pokemon not found",
     });
+
     // 8c. Remove the found pokemon and send a success message
   } else {
     pokeData.splice(foundPokemonIndex, 1);
 
     res.status(200).json({ message: "success", payload: pokeData });
   } // end of if/else statement
-}); // end of DELETE "/:name"
+}); // end of DELETE "/pokemons/:name"
 
 /*
     9. Handle any unhandled URL extensions as an error

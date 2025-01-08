@@ -11,34 +11,32 @@
 */
 
 /*
-    4. Handle get requests to localhost:3000/
+    4. Handle get requests to localhost:3000/pokemons
 */
 
 /*
     5. Set up the ability to query for a specific item in the data set
   */
-// 5a. Collect the query from the request object
+// 5a. Set up for if the client requested a pokemon with a query
 
-// 5b. Set up for if a query exists
+// 5b. Use .find to search for the pokemon in the data
 
-// 5c. Use findIndex() to return the index of the first element that passes a test (provided by a function)
+// 5c. If the pokemon isn't found it will be undefined, send back a failure message
 
-// 5d. If the pokemon's index isn't found, send back a failure message
-
-// 5e. if the pokemon IS found, send back a success message, with the pokemon that was found
+// 5d. if the pokemon IS found, send back a success message, with the pokemon that was found
 
 // 4a. respond with the entire pokeData object if you DON'T input pokemon
 
 /*
-    6. Handle post requests to localhost:3000/
+    6. Handle post requests to localhost:3000/pokemons
 */
 
 /*
-    7. Handle put requests to localhost:3000/:name
+    7. Handle patch requests to localhost:3000/pokemons/:name
 */
 
 /*
-    8. Handle delete requests to localhost:3000/name
+    8. Handle delete requests to localhost:3000/pokemons/:name
 */
 
 /*
