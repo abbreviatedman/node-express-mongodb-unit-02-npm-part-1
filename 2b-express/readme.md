@@ -1,4 +1,4 @@
-# Lesson 2A: Basics of Express
+# Lesson 2B: Basics of Express
 
 ---
 
